@@ -1,0 +1,55 @@
+STATE-OF-THE-ART LLM SERVERS FOR APPLE SILICON (20GB+ Memory)
+================================================================
+
+SCRIPTS AVAILABLE (in order of recommendation):
+
+1. qwen3-32b_11443.sh              ⭐ RECOMMENDED - Best balance
+   └─ Qwen3-32B - Speed/quality tradeoff, latest architecture
+   └─ ~18GB memory, ~8-12 tokens/sec
+   └─ Port 11443
+
+2. deepseek-v3_11444.sh            ⭐ BEST REASONING
+   └─ DeepSeek-V3 - Top reasoning performance
+   └─ ~18GB memory, ~6-10 tokens/sec  
+   └─ Port 11444
+
+3. llama3.3-70b_11445.sh           ⚠️  MAXIMUM CAPABILITY
+   └─ Llama 3.3 70B - Largest/most capable
+   └─ ~40GB memory (watch it), ~4-7 tokens/sec
+   └─ Port 11445
+
+4. mixtral-8x7b_11446.sh           MIXTURE OF EXPERTS
+   └─ Mixtral 8x7B - Smart expert routing
+   └─ ~18GB memory, ~8-12 tokens/sec
+   └─ Port 11446
+
+5. qwen3-vl-32b_11447.sh           MULTIMODAL
+   └─ Qwen3-VL - Vision + Language understanding
+   └─ ~20GB memory, ~6-10 tokens/sec
+   └─ Port 11447
+
+6. mistral-7b-instruct_11437.sh    BASELINE
+   └─ Mistral 7B - For reference/testing only
+   └─ mlx_lm.server (not vllm-mlx)
+   └─ Port 11437
+
+GETTING STARTED:
+
+For best speed/quality balance:
+  ./qwen3-32b_11443.sh
+  ./test-server.sh 11443
+
+For maximum capability:
+  ./llama3.3-70b_11445.sh
+  ./test-server.sh 11445
+
+For best reasoning:
+  ./deepseek-v3_11444.sh
+  ./test-server.sh 11444
+
+DETAILED INFO:
+  See SOTA_MODELS.md for complete model descriptions, benchmarks, and recommendations
+
+TEST TOOL USE:
+  ./test-tool-use.sh <port>
+  ./test-tool-use.sh 11443

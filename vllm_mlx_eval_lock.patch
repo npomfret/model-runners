@@ -1,0 +1,123 @@
+--- a/vllm_mlx/models/llm.py
++++ b/vllm_mlx/models/llm.py
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: Apache-2.0
+ """
+ MLX Language Model wrapper.
++
++Thread safety: All mlx_lm.generate() and stream_generate() calls must be
++serialized through _EVAL_LOCK to prevent concurrent GPU access.
+
+ This module provides a wrapper around mlx-lm for LLM inference,
+ integrating with vLLM's model execution system.
+@@ -9,6 +11,7 @@
+ import logging
+ from dataclasses import dataclass
+ from typing import Iterator
++import threading
+
+ logger = logging.getLogger(__name__)
+
++
++_EVAL_LOCK = threading.Lock()
+ 
+ 
+ @dataclass
+@@ -153,12 +157,14 @@ class MLXLanguageModel:
+         sampler = self._create_sampler(temperature, top_p)
+ 
+         # Generate text
+-        output_text = generate(
+-            self.model,
+-            self.tokenizer,
+-            prompt=prompt,
+-            max_tokens=max_tokens,
+-            sampler=sampler,
+-            verbose=False,
+-        )
++        with _EVAL_LOCK:
++            output_text = generate(
++                self.model,
++                self.tokenizer,
++                prompt=prompt,
++                max_tokens=max_tokens,
++                sampler=sampler,
++                verbose=False,
++            )
+ 
+         # Tokenize output to get token IDs
+         tokens = self.tokenizer.encode(output_text)
+@@ -214,19 +222,21 @@ class MLXLanguageModel:
+         mtp_kwargs = {}
+         if self._mtp:
+             mtp_kwargs["mtp"] = True
+ 
+-        for response in stream_generate(
+-            self.model,
+-            self.tokenizer,
+-            prompt=prompt,
+-            max_tokens=max_tokens,
+-            sampler=sampler,
+-            **mtp_kwargs,
+-        ):
+-            token_count += 1
+-            # response.text is the new token text (not accumulated)
+-            new_text = response.text
+-            accumulated_text += new_text
++        with _EVAL_LOCK:
++            for response in stream_generate(
++                self.model,
++                self.tokenizer,
++                prompt=prompt,
++                max_tokens=max_tokens,
++                sampler=sampler,
++                **mtp_kwargs,
++            ):
++                token_count += 1
++                # response.text is the new token text (not accumulated)
++                new_text = response.text
++                accumulated_text += new_text
+ 
+-            # Check for stop sequences
+-            should_stop = False
+-            if stop:
+-                for stop_seq in stop:
+-                    if stop_seq in accumulated_text:
+-                        should_stop = True
+-                        break
++                # Check for stop sequences
++                should_stop = False
++                if stop:
++                    for stop_seq in stop:
++                        if stop_seq in accumulated_text:
++                            should_stop = True
++                            break
+ 
+-            finished = should_stop or token_count >= max_tokens
+-            finish_reason = None
+-            if finished:
+-                finish_reason = "stop" if should_stop else "length"
++                finished = should_stop or token_count >= max_tokens
++                finish_reason = None
++                if finished:
++                    finish_reason = "stop" if should_stop else "length"
+ 
+-            yield StreamingOutput(
+-                text=new_text,
+-                token=response.token if hasattr(response, "token") else 0,
+-                finished=finished,
+-                finish_reason=finish_reason,
+-                prompt_tokens=num_prompt_tokens,
+-            )
++                yield StreamingOutput(
++                    text=new_text,
++                    token=response.token if hasattr(response, "token") else 0,
++                    finished=finished,
++                    finish_reason=finish_reason,
++                    prompt_tokens=num_prompt_tokens,
++                )
+ 
+-            if finished:
+-                break
++                if finished:
++                    break

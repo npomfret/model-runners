@@ -1,0 +1,17 @@
+--- a/vllm_mlx/server.py
++++ b/vllm_mlx/server.py
+@@ -1177,9 +1177,13 @@ async def _wait_with_disconnect(
+             logger.info(
+                 f"[disconnect_guard] CLIENT DISCONNECTED (non-stream) "
+                 f"elapsed={_time.monotonic() - _t0:.1f}s"
+             )
+             task.cancel()
++            # Give the background eval task time to actually finish
++            # before cleanup runs. This prevents races where cleanup
++            # touches the Metal GPU while eval is still mid-flight.
++            await asyncio.sleep(0.5)
+             try:
+                 await task
+             except (asyncio.CancelledError, Exception):
+                 pass
+             return None  # Signal to caller that client disconnected
