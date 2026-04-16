@@ -19,26 +19,26 @@ from mlx_vlm import load, generate
 app = FastAPI()
 model = None
 processor = None
+MODEL_NAME = "mlx-community/gemma-4-31b-8bit"
 
 
 @app.on_event("startup")
 async def startup():
     global model, processor
-    model, processor = load("mlx-community/gemma-4-31b-8bit")
-    print("✓ Gemma 4 31B model loaded")
+    model, processor = load(MODEL_NAME)
+    print(f"✓ {MODEL_NAME} loaded")
 
 
 @app.get("/v1/models")
 async def list_models():
-    """OpenAI-compatible models endpoint"""
     return {
         "object": "list",
         "data": [
             {
-                "id": "gemma-4-31b-8bit",
+                "id": MODEL_NAME,
                 "object": "model",
                 "created": 1700000000,
-                "owned_by": "mlx-community",
+                "owned_by": MODEL_NAME.split("/")[0] if "/" in MODEL_NAME else "local",
             }
         ],
     }
@@ -87,10 +87,10 @@ async def chat_completions(request: dict):
         output = '\n'.join(clean_output).strip()
 
         return {
-            "id": "gemma-4-31b",
+            "id": MODEL_NAME,
             "object": "chat.completion",
             "created": int(__import__('time').time()),
-            "model": "gemma-4-31b-8bit",
+            "model": MODEL_NAME,
             "choices": [
                 {
                     "index": 0,
@@ -115,8 +115,8 @@ def chat_mode(system_prompt: Optional[str] = None):
     """Interactive chat mode"""
     global model, processor
     if not model:
-        model, processor = load("mlx-community/gemma-4-31b-8bit")
-        print("✓ Gemma 4 31B model loaded\n")
+        model, processor = load(MODEL_NAME)
+        print(f"✓ {MODEL_NAME} loaded\n")
 
     if system_prompt:
         print(f"System: {system_prompt}\n")
@@ -166,7 +166,9 @@ def chat_mode(system_prompt: Optional[str] = None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Gemma 4 31B MLX Server")
+    parser = argparse.ArgumentParser(description="Gemma 4 MLX Server")
+    parser.add_argument("--model", default="mlx-community/gemma-4-31b-8bit",
+                        help="HuggingFace model ID (mlx-vlm compatible)")
     parser.add_argument("--mode", choices=["server", "chat"], default="server",
                         help="Run in server mode (API) or chat mode (interactive)")
     parser.add_argument("--host", default="0.0.0.0", help="Server host")
@@ -175,10 +177,13 @@ def main():
                         help="System prompt for chat mode")
     args = parser.parse_args()
 
+    global MODEL_NAME
+    MODEL_NAME = args.model
+
     if args.mode == "chat":
         chat_mode(system_prompt=args.system)
     else:
-        print(f"Starting Gemma 4 31B server on {args.host}:{args.port}")
+        print(f"Starting {MODEL_NAME} server on {args.host}:{args.port}")
         uvicorn.run(app, host=args.host, port=args.port)
 
 
