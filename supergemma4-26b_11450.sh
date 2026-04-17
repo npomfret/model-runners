@@ -5,13 +5,4 @@
 # Best for: Vision + language, uncensored responses, document/image understanding
 # Port: 11450
 
-# Load HuggingFace token if available
-if [ -f .env ]; then
-    export $(cat .env | grep HF_TOKEN)
-fi
-
-uv run python -m vllm_mlx.server \
-  --model Jiunsong/supergemma4-26b-abliterated-multimodal-mlx-4bit \
-  --mllm \
-  --host 0.0.0.0 \
-  --port 11450
+exec "$(dirname "$0")/_launch.sh" vllm_mlx.server Jiunsong/supergemma4-26b-abliterated-multimodal-mlx-4bit 11450 --mllm

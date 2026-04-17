@@ -7,12 +7,4 @@
 # Tool use: Good
 # Port: 11448
 
-# Load HuggingFace token if available
-if [ -f .env ]; then
-    export $(cat .env | grep HF_TOKEN)
-fi
-
-uv run python gemma4_vlm_server.py \
-  --model mlx-community/gemma-4-e4b-it-8bit \
-  --host 0.0.0.0 \
-  --port 11448
+exec "$(dirname "$0")/_launch.sh" "mlx_vlm server" mlx-community/gemma-4-e4b-it-8bit 11448

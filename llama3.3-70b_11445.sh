@@ -8,12 +8,4 @@
 # Port: 11445
 # WARNING: May need 20GB+ memory, monitor during inference
 
-# Load HuggingFace token if available
-if [ -f .env ]; then
-    export $(cat .env | grep HF_TOKEN)
-fi
-
-uv run python -m vllm_mlx.server \
-  --model mlx-community/Llama-3.3-70B-Instruct-4bit \
-  --host 0.0.0.0 \
-  --port 11445
+exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/Llama-3.3-70B-Instruct-4bit 11445

@@ -8,12 +8,4 @@
 # Tool use: Good
 # Port: 11449
 
-# Load HuggingFace token if available
-if [ -f .env ]; then
-    export $(cat .env | grep HF_TOKEN)
-fi
-
-uv run python -m vllm_mlx.server \
-  --model mlx-community/Phi-3-mini-128k-instruct-4bit \
-  --host 0.0.0.0 \
-  --port 11449
+exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/Phi-3-mini-128k-instruct-4bit 11449

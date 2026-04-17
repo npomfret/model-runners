@@ -7,11 +7,4 @@
 # Port: 11452
 # Note: uses mlx-vlm (vllm_mlx does not yet support gemma4)
 
-if [ -f .env ]; then
-    export $(cat .env | grep HF_TOKEN)
-fi
-
-uv run python -m mlx_vlm server \
-  --model mlx-community/gemma-4-31b-it-8bit \
-  --host 0.0.0.0 \
-  --port 11452
+exec "$(dirname "$0")/_launch.sh" "mlx_vlm server" mlx-community/gemma-4-31b-it-8bit 11452

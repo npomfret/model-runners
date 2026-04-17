@@ -7,12 +7,4 @@
 # Tool use: Excellent
 # Port: 11444
 
-# Load HuggingFace token if available
-if [ -f .env ]; then
-    export $(cat .env | grep HF_TOKEN)
-fi
-
-uv run python -m vllm_mlx.server \
-  --model mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit \
-  --host 0.0.0.0 \
-  --port 11444
+exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit 11444

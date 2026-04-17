@@ -7,12 +7,4 @@
 # Tool use: Excellent - MoE allows different experts for different tools
 # Port: 11446
 
-# Load HuggingFace token if available
-if [ -f .env ]; then
-    export $(cat .env | grep HF_TOKEN)
-fi
-
-uv run python -m vllm_mlx.server \
-  --model mlx-community/Mixtral-8x7B-Instruct-v0.1-hf-4bit-mlx \
-  --host 0.0.0.0 \
-  --port 11446
+exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/Mixtral-8x7B-Instruct-v0.1-hf-4bit-mlx 11446
