@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """
-Gemma 4 31B MLX Vision-Language Model Server
-Serves via OpenAI-compatible API
+Gemma 4 MLX Vision-Language Model Server
+Serves via OpenAI-compatible API (/v1/models, /v1/chat/completions).
 """
 
 import argparse
 import json
-from pathlib import Path
+import time
+import uuid
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse
 import uvicorn
 
-from mlx_vlm import load, generate
+from mlx_vlm import load, generate, stream_generate
+from mlx_vlm.prompt_utils import apply_chat_template
 
 
 app = FastAPI()
@@ -44,67 +46,126 @@ async def list_models():
     }
 
 
+def _build_prompt(messages):
+    # Gemma 4 produces garbage output without its chat template applied.
+    return apply_chat_template(
+        processor,
+        model.config,
+        messages,
+        add_generation_prompt=True,
+    )
+
+
+def _finish_reason(generation_tokens: int, max_tokens: int) -> str:
+    return "length" if generation_tokens >= max_tokens else "stop"
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: dict):
-    """OpenAI-compatible chat completions endpoint"""
     if not model:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     messages = request.get("messages", [])
-    max_tokens = request.get("max_tokens", 512)
+    max_tokens = request.get("max_tokens") or 512
     temperature = request.get("temperature", 0.7)
+    top_p = request.get("top_p", 1.0)
+    stream = bool(request.get("stream", False))
 
-    # Extract text from messages - format as simple prompt
-    prompt_text = ""
-    for msg in messages:
-        role = msg.get("role", "user")
-        content = msg.get("content", "")
-        if role == "system":
-            prompt_text += f"System: {content}\n\n"
-        else:
-            prompt_text += f"{role.capitalize()}: {content}\n"
+    prompt_text = _build_prompt(messages)
 
-    # Generate response
+    request_id = f"chatcmpl-{uuid.uuid4().hex}"
+    created = int(time.time())
+
+    gen_kwargs = {
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "top_p": top_p,
+    }
+
+    if stream:
+        def event_stream():
+            # First chunk announces the role, subsequent chunks carry content deltas.
+            head = {
+                "id": request_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": MODEL_NAME,
+                "choices": [
+                    {"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}
+                ],
+            }
+            yield f"data: {json.dumps(head)}\n\n"
+
+            last_response = None
+            try:
+                for response in stream_generate(
+                    model, processor, prompt_text, **gen_kwargs
+                ):
+                    last_response = response
+                    if not response.text:
+                        continue
+                    chunk = {
+                        "id": request_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": MODEL_NAME,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": response.text},
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
+            except Exception as e:
+                err = {"error": {"message": str(e), "type": "server_error"}}
+                yield f"data: {json.dumps(err)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
+            gen_tokens = last_response.generation_tokens if last_response else 0
+            final = {
+                "id": request_id,
+                "object": "chat.completion.chunk",
+                "created": created,
+                "model": MODEL_NAME,
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {},
+                        "finish_reason": _finish_reason(gen_tokens, max_tokens),
+                    }
+                ],
+            }
+            yield f"data: {json.dumps(final)}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(event_stream(), media_type="text/event-stream")
+
     try:
-        # Cap max_tokens at 200 to prevent runaway generations
-        capped_max_tokens = min(max_tokens, 200) if max_tokens else 200
-        result = generate(
-            model,
-            processor,
-            prompt_text,
-            max_tokens=capped_max_tokens,
-            temperature=temperature,
-        )
-        # Extract text from GenerationResult object
-        output = result.text if hasattr(result, 'text') else str(result)
-        # Clean up: stop at conversation markers
-        lines = output.split('\n')
-        clean_output = []
-        for line in lines:
-            if any(marker in line for marker in ['User:', 'A:', 'Assistant:', 'Q:']):
-                break
-            clean_output.append(line)
-        output = '\n'.join(clean_output).strip()
+        result = generate(model, processor, prompt_text, **gen_kwargs)
+        output = (result.text if hasattr(result, "text") else str(result)).strip()
+        prompt_tokens = getattr(result, "prompt_tokens", 0)
+        completion_tokens = getattr(result, "generation_tokens", 0)
+        total_tokens = getattr(result, "total_tokens", prompt_tokens + completion_tokens)
 
         return {
-            "id": MODEL_NAME,
+            "id": request_id,
             "object": "chat.completion",
-            "created": int(__import__('time').time()),
+            "created": created,
             "model": MODEL_NAME,
             "choices": [
                 {
                     "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": output,
-                    },
-                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": output},
+                    "finish_reason": _finish_reason(completion_tokens, max_tokens),
                 }
             ],
             "usage": {
-                "prompt_tokens": result.prompt_tokens if hasattr(result, 'prompt_tokens') else len(prompt_text.split()),
-                "completion_tokens": result.generation_tokens if hasattr(result, 'generation_tokens') else len(output.split()),
-                "total_tokens": result.total_tokens if hasattr(result, 'total_tokens') else len(prompt_text.split()) + len(output.split()),
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
             },
         }
     except Exception as e:
@@ -132,31 +193,21 @@ def chat_mode(system_prompt: Optional[str] = None):
             if not user_input:
                 continue
 
-            # Build prompt with system context
+            chat_messages = []
             if system_prompt:
-                prompt = f"System: {system_prompt}\n\nUser: {user_input}\nAssistant:"
-            else:
-                prompt = f"User: {user_input}\nAssistant:"
+                chat_messages.append({"role": "system", "content": system_prompt})
+            chat_messages.append({"role": "user", "content": user_input})
+            prompt = _build_prompt(chat_messages)
 
-            print("", end="", flush=True)
             result = generate(
                 model,
                 processor,
                 prompt,
-                max_tokens=200,
+                max_tokens=512,
                 temperature=0.7,
             )
-            # Extract text from GenerationResult object
-            output = result.text if hasattr(result, 'text') else str(result)
-            # Clean up: stop at conversation markers (User:, A:, Assistant:)
-            lines = output.split('\n')
-            clean_output = []
-            for line in lines:
-                if any(marker in line for marker in ['User:', 'A:', 'Assistant:', 'Q:']):
-                    break
-                clean_output.append(line)
-            output = '\n'.join(clean_output).strip()
-            print(output)
+            output = result.text if hasattr(result, "text") else str(result)
+            print(output.strip())
             print()
         except KeyboardInterrupt:
             print("\nGoodbye!")
