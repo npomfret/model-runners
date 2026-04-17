@@ -11,7 +11,7 @@ if [ -f .env ]; then
     export $(cat .env | grep HF_TOKEN)
 fi
 
-uv run python gemma4_vlm_server.py \
+uv run python -m mlx_vlm server \
   --model mlx-community/gemma-4-31b-it-8bit \
   --host 0.0.0.0 \
   --port 11452
