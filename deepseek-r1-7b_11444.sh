@@ -7,4 +7,4 @@
 # Tool use: Excellent
 # Port: 11444
 
-exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit 11444
+exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/DeepSeek-R1-Distill-Qwen-7B-4bit 11444 --reasoning-parser deepseek_r1

@@ -73,7 +73,7 @@ RESP=$(timeout 60 curl -sSf "$BASE/v1/chat/completions" \
       }
     }],
     \"tool_choice\": \"auto\",
-    \"max_tokens\": 200
+    \"max_tokens\": 1024
   }")
 
 CALLS=$(echo "$RESP" | jq '.choices[0].message.tool_calls // [] | length')
