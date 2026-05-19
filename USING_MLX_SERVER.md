@@ -7,7 +7,7 @@ A local OpenAI-compatible LLM server running on Apple Silicon. No API key, runs 
 In the `mlx-server` repo, run one of the `<model>_<port>.sh` scripts. The port is in the filename:
 
 ```bash
-./qwen3.6-35b-a3b_11456.sh   # serves on http://localhost:11456
+./qwen3.6-35b-a3b_11457.sh   # serves on http://localhost:11457
 ```
 
 Leave it running. First start downloads the model (can take a while).
@@ -15,17 +15,17 @@ Leave it running. First start downloads the model (can take a while).
 ## 2. Check it's up
 
 ```bash
-curl -s http://localhost:11456/v1/models | jq -r '.data[].id'
+curl -s http://localhost:11457/v1/models | jq -r '.data[].id'
 ```
 
 The id it prints is the value you pass as `"model"` below.
 
 ## 3. Call it (OpenAI-compatible)
 
-Base URL: `http://localhost:11456/v1` — endpoints `/chat/completions`, `/models`. Any dummy API key works.
+Base URL: `http://localhost:11457/v1` — endpoints `/chat/completions`, `/models`. Any dummy API key works.
 
 ```bash
-curl -s http://localhost:11456/v1/chat/completions \
+curl -s http://localhost:11457/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mlx-community/Qwen3.6-35B-A3B-8bit",
@@ -39,7 +39,7 @@ OpenAI SDK example:
 ```python
 from openai import OpenAI
 
-client = OpenAI(base_url="http://localhost:11456/v1", api_key="not-needed")
+client = OpenAI(base_url="http://localhost:11457/v1", api_key="not-needed")
 resp = client.chat.completions.create(
     model="mlx-community/Qwen3.6-35B-A3B-8bit",
     messages=[{"role": "user", "content": "Hello"}],
