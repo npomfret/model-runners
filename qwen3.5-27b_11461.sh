@@ -5,7 +5,7 @@
 # Context: 262K native (extensible to 1M via YaRN)
 # Best for: agentic/tool-calling workloads, long context
 # Tool use: Excellent - Hermes-style recommended
-# Port: 11455
+# Port: 11461
 # Note: novel architecture; vllm_mlx may reject if arch unsupported
 
-exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/Qwen3.5-27B-8bit 11455
+exec "$(dirname "$0")/_launch.sh" vllm_mlx.server mlx-community/Qwen3.5-27B-8bit 11461
