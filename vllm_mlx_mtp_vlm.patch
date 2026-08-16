@@ -1,0 +1,20 @@
+--- scheduler.py.orig	2026-08-16 13:21:51
++++ scheduler.py	2026-08-16 13:22:01
+@@ -1306,11 +1306,15 @@
+             )
+ 
+         # Install MTP if the model supports it
++        # For VLM checkpoints loaded as text models, inject_mtp_support()
++        # patches the inner language_model (return_hidden/mtp_forward/mtp),
++        # not the outer wrapper — so MTP must run against the inner model.
+         if self.config.enable_mtp:
+-            if hasattr(self.model, "mtp") and self.model.mtp is not None:
++            mtp_model = getattr(self.model, "language_model", self.model)
++            if hasattr(mtp_model, "mtp") and mtp_model.mtp is not None:
+                 _install_mtp(
+                     bg,
+-                    model=self.model,
++                    model=mtp_model,
+                     num_draft_tokens=self.config.mtp_num_draft_tokens,
+                     optimistic=self.config.mtp_optimistic,
+                 )
