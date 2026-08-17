@@ -39,4 +39,5 @@ exec uv run python -m vllm_mlx.cli serve mlx-community/Qwen3.8-27B-8bit \
   --port 11465 \
   --reasoning-parser qwen3 \
   --continuous-batching \
-  --enable-mtp
+  --enable-mtp \
+  --timeout 900

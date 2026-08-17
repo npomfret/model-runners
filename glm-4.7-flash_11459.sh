@@ -30,4 +30,5 @@ exec uv run python -m vllm_mlx.cli serve mlx-community/GLM-4.7-Flash-8bit \
   --host 0.0.0.0 \
   --port 11459 \
   --reasoning-parser qwen3 \
-  --enable-auto-tool-choice --tool-call-parser glm47
+  --enable-auto-tool-choice --tool-call-parser glm47 \
+  --timeout 900
