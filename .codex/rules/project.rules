@@ -1,0 +1,43 @@
+# Codex command rules for this project.
+# Syntax: Starlark. decision precedence: forbidden > prompt > allow.
+# Loads only when this project is trusted.
+
+# ---- git: everything except merge / push / commit ----
+prefix_rule(
+    pattern = ["git"],
+    decision = "allow",
+    justification = "Local git work is unrestricted in this project.",
+)
+
+prefix_rule(
+    pattern = ["git", ["merge", "push", "commit"]],
+    decision = "forbidden",
+    justification = "Merging, pushing and committing are reserved for the human.",
+)
+
+# Global git flags sit between "git" and the subcommand, so exact-prefix
+# matching would miss e.g. `git -C . push`. Route those through a prompt.
+prefix_rule(
+    pattern = ["git", ["-c", "-C", "--git-dir", "--work-tree", "--exec-path", "--namespace", "-P", "--no-pager"]],
+    decision = "prompt",
+    justification = "A global git flag can conceal a blocked subcommand; confirm manually.",
+)
+
+# ---- project scripts ----
+prefix_rule(
+    pattern = [["./_launch.sh", "./deepseek-r1-7b_11444.sh", "./gemma-4-26b-a4b-4bit_11453.sh", "./gemma-4-26b-a4b_11451.sh", "./gemma-4-31b_11452.sh", "./gemma-4-e4b_11448.sh", "./glm-4.5-air-4bit_11458.sh", "./glm-4.7-flash_11459.sh", "./llama3.3-70b_11445.sh", "./mistral-small-3.2-24b_11460.sh", "./mixtral-8x7b_11446.sh", "./phi-3-mini-128k_11449.sh", "./qwen2.5-14b_11454.sh", "./qwen3-30b-a3b_11456.sh", "./qwen3-32b_11443.sh", "./qwen3-vl-32b_11447.sh", "./qwen3.5-27b_11461.sh", "./qwen3.6-27b-optiq-4bit_11462.sh", "./qwen3.6-35b-a3b-optiq-4bit_11463.sh", "./qwen3.6-35b-a3b_11455.sh", "./qwen3.6-35b-a3b_11457.sh", "./qwen3.8-27b_11464.sh", "./run-server.sh", "./supergemma4-26b_11450.sh", "./test-server.sh"]],
+    decision = "allow",
+    justification = "Scripts that ship with this project.",
+)
+
+prefix_rule(
+    pattern = ["uv", ["run", "sync", "lock", "pip"]],
+    decision = "allow",
+    justification = "Project Python environment.",
+)
+
+prefix_rule(
+    pattern = ["pytest"],
+    decision = "allow",
+    justification = "Project test suite.",
+)
