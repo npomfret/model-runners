@@ -1,16 +1,15 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
+    "defaultMode": "acceptEdits",
     "allow": [
-      "Read",
-      "Edit",
-      "Write",
-      "Glob",
-      "Grep",
-      "Bash",
-      "WebFetch",
-      "WebSearch",
-      "Agent"
-    ]
+      "Bash(git *)",
+      "Bash(npm run *)"
+    ],
+    "deny": []
+  },
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
   }
 }
