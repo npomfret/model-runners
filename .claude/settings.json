@@ -11,5 +11,8 @@
     "commit": "",
     "pr": "",
     "sessionUrl": false
+  },
+  "enabledPlugins": {
+    "task-files@npomfret": true
   }
 }
