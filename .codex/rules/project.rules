@@ -38,6 +38,31 @@ prefix_rule(
     justification = "amend rewrites the previous commit; confirm manually.",
 )
 
+# ---- gh: GitHub CLI ----
+prefix_rule(
+    pattern = ["gh", "issue"],
+    decision = "allow",
+    justification = "Reading and filing issues is expected agent work.",
+)
+
+prefix_rule(
+    pattern = ["gh", "issue", "delete"],
+    decision = "forbidden",
+    justification = "Deleting an issue is not reversible from the CLI.",
+)
+
+prefix_rule(
+    pattern = ["gh", ["repo", "release", "workflow", "run", "api"]],
+    decision = "prompt",
+    justification = "These reach beyond issues and can change the repo or trigger CI.",
+)
+
+prefix_rule(
+    pattern = ["gh", ["auth", "secret", "ssh-key"]],
+    decision = "forbidden",
+    justification = "Credential and secret surfaces are not for the agent.",
+)
+
 # ---- project scripts ----
 prefix_rule(
     pattern = [["./_launch.sh", "./deepseek-r1-7b_11444.sh", "./gemma-4-26b-a4b-4bit_11453.sh", "./gemma-4-26b-a4b_11451.sh", "./gemma-4-31b_11452.sh", "./gemma-4-e4b_11448.sh", "./glm-4.5-air-4bit_11458.sh", "./glm-4.7-flash_11459.sh", "./llama3.3-70b_11445.sh", "./mistral-small-3.2-24b_11460.sh", "./mixtral-8x7b_11446.sh", "./phi-3-mini-128k_11449.sh", "./qwen2.5-14b_11454.sh", "./qwen3-30b-a3b_11456.sh", "./qwen3-32b_11443.sh", "./qwen3-vl-32b_11447.sh", "./qwen3.5-27b_11461.sh", "./qwen3.6-27b-optiq-4bit_11462.sh", "./qwen3.6-35b-a3b-optiq-4bit_11463.sh", "./qwen3.6-35b-a3b_11455.sh", "./qwen3.6-35b-a3b_11457.sh", "./qwen3.8-27b_11464.sh", "./run-server.sh", "./supergemma4-26b_11450.sh", "./test-server.sh"]],
