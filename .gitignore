@@ -16,3 +16,4 @@ tmp
 
 # Secrets
 .env
+.gitnexus/
