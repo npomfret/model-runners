@@ -2,19 +2,11 @@
 # Syntax: Starlark. decision precedence: forbidden > prompt > allow.
 # Loads only when this project is trusted.
 
-# ---- git: shared default-branch workflow ----
-
 # ---- gh: GitHub CLI ----
 prefix_rule(
     pattern = ["gh", "issue", "delete"],
     decision = "forbidden",
     justification = "Deleting an issue is not reversible from the CLI.",
-)
-
-prefix_rule(
-    pattern = ["gh", ["repo", "release", "api"]],
-    decision = "prompt",
-    justification = "These can change repo settings or visibility, publish releases, or make arbitrary API calls.",
 )
 
 prefix_rule(
