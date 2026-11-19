@@ -17,4 +17,3 @@ tmp
 # Secrets
 .env
 .gitnexus/
-.codex/config.toml
