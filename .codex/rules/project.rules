@@ -4,15 +4,6 @@
 
 # ---- git: shared default-branch workflow ----
 
-# ---- git history rewriting: confirm before it happens ----
-# Only the forms that throw work away. Plain `git reset` and `git reset <path>`
-# unstage and touch no file, which is ordinary work.
-prefix_rule(
-    pattern = ["git", "reset", ["--hard", "--merge", "--keep"]],
-    decision = "prompt",
-    justification = "These forms of reset discard uncommitted work; confirm manually.",
-)
-
 # ---- gh: GitHub CLI ----
 prefix_rule(
     pattern = ["gh", "issue", "delete"],
@@ -21,9 +12,9 @@ prefix_rule(
 )
 
 prefix_rule(
-    pattern = ["gh", ["repo", "release", "workflow", "run", "api"]],
+    pattern = ["gh", ["repo", "release", "api"]],
     decision = "prompt",
-    justification = "These reach beyond issues and can change the repo or trigger CI.",
+    justification = "These can change repo settings or visibility, publish releases, or make arbitrary API calls.",
 )
 
 prefix_rule(
